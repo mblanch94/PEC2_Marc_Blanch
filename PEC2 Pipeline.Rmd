@@ -1,0 +1,329 @@
+
+## 1. Definición de los datos para el análisis. 
+
+Se decidicó realizar el análisis de diez muestras de uno de los tres grupo escogidas al azar, por lo que antes de proceder con el análisis se realizó una selección de los datos. 
+
+Primero se importaron el archivo *targets*, el cuál se basa en información sobre los grupos y las covariables del estudio, y el archivo *counts*, el cuál contiene xxxxxxxx.
+
+```{r}
+pre_targets <- read.table("~/Desktop/PEC2_OMICS/archivos targets y counts/targets.csv", header = TRUE, sep = ",") 
+pre_counts <- read.table("~/Desktop/PEC2_OMICS/archivos targets y counts/counts.csv", header = TRUE, sep = ";", row.names = 1) 
+```
+
+Posteriormente, mediante el paquete *dplyr*, se seleccionaron al azar diez muestras de cada uno de los tres grupos, para terminar con un total de 30 muestras. 
+
+```{r}
+library(dplyr)
+set.seed(111)
+targets <- pre_targets %>% group_by(Group) %>% sample_n(10)
+```
+
+El siguiente paso fue extraer de la dataframe *counts* todas aquellas columnas cuyo nombre esté en la variable Sample_Name de la dataframe *targets* previamente creada. Pero antes fue necesario modificar el nombre de las columnas de la dataframe *counts*, ya que estos no coincidían con los nombres de la variable Sample_Name del dataframe *targets*. Finalmente, se confirmó que las treinta muestras de *targets* coinciden con las de *counts*. A continucación, se procedió a ejecutar el análisis de los datos empleando los paquetes *edgeR* y *limma*.  
+
+```{r}
+names(pre_counts) <- gsub(x=names(pre_counts), pattern = "\\.", replacement = "-")
+counts <- pre_counts %>%select(one_of(as.character(targets$Sample_Name)))
+row.names(counts) <- gsub(x=row.names(counts), pattern = "\\..*", replacement = "")
+```
+
+```{r}
+table(colnames(counts)==targets$Sample_Name)
+```
+
+```{r}
+library(limma)
+library(edgeR)
+```
+
+## 2. Filtraje de los datos y control de calidad.
+
+### 2.1. Filtraje de los datos.
+
+Se efectuó un filtraje para eliminar genes con valores de *counts* muy bajos, ya que estos proporcionan poca evidencia de expresión diferencial e interfieren con aproximaciones estadísticas. Los criterios del filtraje fueron los siguientes: 1) retener los genes cuando estos se expresan en un recuento por millón (CPM) superior a 0.25 y 2) en almenos dos de las treinta muestras. 
+
+
+```{r}
+misCPM <- cpm(counts)
+filtraje <- misCPM > 0.25
+dim(filtraje)
+guardar <- rowSums(filtraje) >= 2
+counts.guardados <- counts[guardar,]
+summary(guardar)
+dim(counts.guardados)
+```
+
+A continuación se procedió a crear el objecto DGEList, el cuál es un objeto usado por *edgeR* para guardar datos. Permite guardar varios parámetros de los datos. 
+
+```{r}
+y <- DGEList(counts.guardados)
+```
+
+### 2.2. Control de calidad de los datos.
+
+#### 2.2.1 *Boxplot.* 
+
+Primero se representó un *boxplot* para comprobar la distribución de las muestras en la escala log2.  
+
+```{r}
+logcounts <- cpm(y,log=TRUE)
+boxplot(logcounts, xlab="1: ELI, 2:NIT, 3:SFI", ylab="Log2 CPM",las=2, names = c(targets$Group[1:30]))
+abline(h=median(logcounts),col="blue")
+```
+
+#### 2.2.2 *Multidimensional scaling (MDS).* 
+
+Se representó un gráfico MDS para visualizar la variabilidad entre las muestras de los distintos grupos. Se empleó la función plotMDS() para crear el gráfico del MDS.
+
+```{r}
+col.cell <- c("purple","orange","green")[targets$Group]
+plotMDS(y,col=col.cell, pch=16)
+legend("topleft",fill=c("purple","orange","green"),legend=levels(targets$Group),cex=0.6)
+```
+
+## 3. Patrón de expresión entre las muestras. 
+
+Se representó un *heatmap* para examinar visualmente la agrupación jerárquica de las muestras.  Se utilizaron los paquetes *RColorBrewer* y *gplots*. Para representar el *heatmap* se empleó la función *heatmap.2* del paquete *gplots*. 
+
+En el *heatmap* se representaron los 500 genes más variables. Estos se obtuvieron a partir de los *logcounts* previamente definidos. La funciónEn *heatmap.2* calcula una matriz de distancias euclidianas a partir del los *logcounts*. 
+
+```{r}
+library(RColorBrewer)
+library(gplots)
+
+var_genes <- apply(logcounts, 1, var)
+seleccionar_var <- names(sort(var_genes, decreasing=TRUE))[1:500]
+lcpm_más_variables <- logcounts[seleccionar_var,]
+
+mi_palette <- brewer.pal(11,"RdYlBu")
+más_cols <- colorRampPalette(mi_palette)
+col.cell <- c("purple","orange", "green")[targets$Group]
+heatmap.2(lcpm_más_variables,col=rev(más_cols(50)),trace="none", labCol = targets$Group,ColSideColors=col.cell,scale="row")
+```
+
+El *heatmap* se exportó y guardó en formato pdf. Este se subió al repositorio de *github*.
+
+```{r}
+pdf(file="Heatmap.pdf")
+heatmap.2(lcpm_más_variables,col=rev(más_cols(50)),trace="none", labCol = targets$Group,ColSideColors=col.cell,scale="row")
+dev.off()
+```
+
+## 4. Normalizació y transformación de los datos.
+
+### 4.1. Normalización. 
+
+En este paso se realizó una normalización y una posterior transformación Voom de los datos para poder realizar una comparación más ajustada entre las muestras de los distintos grupos. La transformación Voom transforma los datos de los *counts* a log2 recuentos por millón. (log2-CPM). 
+
+Primero se realizó una normalización TMM para normalizar los datos y así obtener los factores normalizados de las muestras. Para la normalización se empleó la función calcNormfactors(). 
+
+```{r}
+y <- calcNormFactors(y)
+head(y$samples)
+```
+
+Posteriormente se creó una matriz de diseño, la cuál se requiere para la transformación Voom. 
+
+### 4.2. Matriz de diseño 
+
+Se empleó la función model.matrix para crear la matriz de diseño. 
+
+```{r}
+mat_diseño <- model.matrix(~ 0 + Group, data = targets)
+mat_diseño
+```
+
+### 4.3. Transformación Voom. 
+
+Con los factores normalizados y la matriz de diseño se efectuó una transformación Voom. Para ello se empleó la función voom. También se representó un gráfico para ver los efectos de esta transformación. 
+
+```{r}
+v <- voom(y,mat_diseño,plot = TRUE)
+names(v)
+```
+
+
+### 4.4. *Boxplot* de los datos normalizados y transformados.  
+
+Se representaron los counts normalizados y a escala log2 para comprobar los efectos de la normalización. Los counts normalizados y a escala log2 se encentraban en la variable v.
+
+```{r}
+boxplot(v$E, xlab="1: ELI, 2:NIT, 3:SFI", ylab="Log2 CPM", las=2, names = c(targets$Group[1:30]))
+abline(h=median(v$E),col="blue")
+```
+
+
+## 5. Identificación de genes diferencialmente expresados. 
+
+Se empleó el paquete *limma* implementado en Bioconductor para identificar los genes diferencialmente expresados. Primero se ajustó un modelo lineal para cada gen utilizando la función *lmFit*. Esta función necesita la matriz de diseño y los *counts* normalizados, y estima las medias de los grupos de acuerdo con la matriz de diseño. 
+
+```{r}
+fit <- lmFit(v)
+```
+
+### 5.1 Matriz de contrastes y comparaciones. 
+
+Ya que nos interesan las diferencias entre grupos, se especificaron qué comparaciones se querían probar. Las comparaciones de interés se especificaron mediante la función makeContrasts. 
+
+```{r}
+mat_contrastes <- makeContrasts(ELIvsNIT= GroupELI - GroupNIT, SFIvsNIT= GroupSFI - GroupNIT, ELIvsSFI= GroupELI - GroupSFI,  levels=mat_diseño)
+mat_contrastes
+```
+
+Aquí, estamos interesados en saber qué genes se expresan diferencialmente entre los distintos grupos, es decir, era de interés comparar todos los grupos entre ello, resultando en un total de tres comparaciones. 
+
+El siguiente paso fue aplicar la matriz de contrastes al objeto ajustado *Fit* previamente creado para así obtener las estadísticas y los parámetros estimados de las comparaciones de interés. Para ello, se empleó la función *contrasts.fit*.
+
+El paso final es utilizar la función *eBayes* para realizar el método de Bayes empírico sobre las varianzas, y así estimar los *t-statistics* y los *p-values* ajustados. 
+
+```{r}
+fit.cont <- contrasts.fit(fit, mat_contrastes)
+fit.cont <- eBayes(fit.cont)
+```
+
+A continuación se procedió a quantificar los genes diferencialment expresados y a su identificación. 
+
+Mediante la función *decideTests* se generó un resumen (*resumen.fit*) de los genes diferencialmente expresados en las distintas comparaciones. 
+
+```{r}
+resumen.fit <- decideTests(fit.cont)
+summary(resumen.fit)
+```
+
+También, para cada comparación, empleando la función *topTable*, se generó una tabla basada en los diez genes diferencialmente expresados que presentaban menor *p-value* ajustado. 
+
+```{r}
+topTable(fit.cont,coef="ELIvsNIT",sort.by="p")
+topTable(fit.cont,coef="SFIvsNIT",sort.by="p")
+topTable(fit.cont,coef="ELIvsSFI",sort.by="p")
+```
+
+### 5.2 Diagrama de Venn. 
+
+Para terminar con esta sección, se consideró interesante determinar si había superposición de genes diferencialmente expresados entre las comparaciones. Para ello se representó un diagrama de Venn mediante la función *vennDiagram.*  
+
+```{r}
+vennDiagram(resumen.fit, circle.col = c("red", "blue", "green"))
+```
+
+## 6. Anotación de los resultados.
+
+La anotación de los resultados permitió conocer cuáles eran los genes diferencialmente expresados identificados previamente. Para la anotación se utilizó el paquete *org.Hs.eg.db*. La anotación fue posible ya que se disponía del identificador ENSEMBL de los genes. Para cada gen se anotó el identificador ENTREZID, el nombre del gen y su correpondiente símbolo.
+
+```{r}
+library(org.Hs.eg.db)
+```
+
+```{r}
+anotación <- select(org.Hs.eg.db,keytype="ENSEMBL",keys=rownames(fit.cont),columns=c("ENTREZID","SYMBOL","GENENAME"))
+```
+
+Una vez realizada la anotación, se detectó que algunos genes aparecían repetidos. Estos se eliminaron con la función distinct del paquete *dplyr*. 
+Posteriormente, con la función *table* se comprovó que todos los identificadores ENSEMBL de los genes post-anotación coincidían con los identificadores ENSEMBL del objeto *fit.cont*. Luego los genes anotados se fueron incorporados al objeto *fit.cont*. 
+
+```{r}
+anotación2<-distinct(anotación, anotación$ENSEMBL, .keep_all = TRUE)
+anotación2$`anotación$ENSEMBL`=NULL
+table(anotación2$ENSEMBL==rownames(fit.cont))
+anotación<-anotación2
+fit.cont$genes <- anotación
+```
+
+Finalmente, se obtuvieron las tablas con los genes diferencialmente expresados para cada comparación. Mediante la función *topTable* se obtuvieron para cada comparación los 10 genes diferencialmente expresados con *p-value* más significativo. 
+
+```{r}
+topTable(fit.cont,coef="ELIvsNIT",sort.by="p", n=10)
+topTable(fit.cont,coef="SFIvsNIT",sort.by="p",n=10)
+topTable(fit.cont,coef="ELIvsSFI",sort.by="p",n=10)
+```
+
+Las tablas que contenían todos los genes diferencialmente expresados anotados para cada comparación se guardaron y se subieron al repositorio de *github*.
+
+```{r}
+Table_ELIvsNIT<-topTable(fit.cont,coef="ELIvsNIT",sort.by="p", n="Inf")
+Table_SFIvsNIT<-topTable(fit.cont,coef="SFIvsNIT",sort.by="p",n="Inf")
+Table_ELIvsSFI<-topTable(fit.cont,coef="ELIvsSFI",sort.by="p",n="Inf")
+```
+
+```{r}
+write.csv(Table_ELIvsNIT,file="TablaAnotaciones_ELIvsNIT.csv",row.names=FALSE)
+write.csv(Table_SFIvsNIT,file="TablaAnotaciones_SFIvsNIT.csv",row.names=FALSE)
+write.csv(Table_ELIvsSFI,file="TablaAnotaciones_ELIvsSFI.csv",row.names=FALSE)
+```
+
+
+## 7. Visualización de genes diferencialmente expresados. 
+
+Se visualizaron los genes diferencialmente expresados anotados previamente mediante gráficos MD y gráficos *volcano*. Ambos plots permiten una representación visual de los genes expresados diferencialmente. Además, permiten visualizar la distinción entre genes infraexpresados y sobrexpresados. 
+
+### 7.1. Gráficos MD. 
+
+Para los gráficos MD se empleó la función *plotMD*. Se representó un gráfico para los genes diferencialmente guardados en el *resumen.fit* para cada una de las tres comparaciones. En los gráficos, los genes con l2fc > 1 se muestran de color verde, y los genes con l2fc < 1 lo hacen de color rojo. 
+
+```{r}
+plotMD(fit.cont,coef=1,status=resumen.fit[,"ELIvsNIT"], values=c(-1,1))
+plotMD(fit.cont,coef=2,status=resumen.fit[,"SFIvsNIT"], values=c(-1,1))
+plotMD(fit.cont,coef=3,status=resumen.fit[,"ELIvsSFI"], values=c(-1,1))
+```
+
+### 7.2. Gráficos *volcano*.  
+
+Para los gràficos *volcano* se empleó la función *volcanoplot*. Se representó un gráfico para cada una de las tres comparaciones. En los gráficos se mostraton también los cinco genes con menos *p-value* ajustado. 
+
+```{r}
+volcanoplot(fit.cont,coef=1,highlight=5,names=fit.cont$genes$SYMBOL)
+abline(v=c(-1,1))
+volcanoplot(fit.cont,coef=2,highlight=5,names=fit.cont$genes$SYMBOL)
+abline(v=c(-1,1))
+volcanoplot(fit.cont,coef=3,highlight=5,names=fit.cont$genes$SYMBOL)
+abline(v=c(-1,1))
+```
+
+## 8. Análisis de significación biológica.
+
+Se realizó el análisis de signifación biològica para aquellas comparaciones que presentaban genes diferencialmente significativos. 
+
+Para estas comparaciones se efectuaron dos tipos de análisis de significación biológica. El primero fue un análisis de *gene ontology enrichment* y el segundo un análisis de significación biológica empleando la base de datos de *Kyoto Encyclopedia of Genes and Genomes* (KEGG).
+
+### 8.1. *Gene Ontology analysis*.
+
+*Gene Ontology* (GO) es una base de datos que comprende mucha información relacionada con la función de los genes. Actualmente exiten más de 20.000 términos de GO. Para efectuar este análisis se utilizó la función *gaona* del paquete *limma*. Se identificaron los términos de GO sobre-representados en las comparaciones. 
+
+```{r}
+go_ELIvsNIT<-goana(fit.cont, coef = "ELIvsNIT", geneid = Table_ELIvsNIT$ENTREZID, FDR = 0.05, trend = FALSE)
+topGO(go_ELIvsNIT, n=10)
+
+go_ELIvsSFI<-goana(fit.cont, coef = "ELIvsSFI", geneid = Table_ELIvsSFI$ENTREZID, FDR = 0.05, trend = FALSE)
+topGO(go_ELIvsSFI, n=10)
+```
+
+Las tablas que contenían los 100 términos de GO más sobrerepresentados por  los genes diferencialmente expresados fueron guardadas y subidas al repositorio de *github*.
+
+```{r}
+GOTable_ELIvsNIT<-topGO(go_ELIvsNIT, n=100)
+GOTable_ELIvsSFI<-topGO(go_ELIvsSFI, n=100)
+write.csv(GOTable_ELIvsNIT,file="GOTabla_ELIvsNIT.csv",row.names=FALSE)
+write.csv(GOTable_ELIvsNIT,file="GOTabla_ELIvsSFI.csv",row.names=FALSE)
+```
+
+### 8.2. *KEGG pathway analysis*.
+
+Esta base de datos contiene información génica sobre *pathways* y *signatures* de enfermedades. Para este análisis se empleó la función *kegga*.
+
+```{r}
+keg_ELIvsNIT<-kegga(fit.cont, coef = "ELIvsNIT", geneid = Table_ELIvsNIT$ENTREZID, FDR = 0.05, trend = FALSE)
+topKEGG(keg_ELIvsNIT, n=15, truncate=34)
+
+keg_ELIvsSFI<-kegga(fit.cont, coef = "ELIvsSFI", geneid = Table_ELIvsSFI$ENTREZID, FDR = 0.05, trend = FALSE)
+topKEGG(keg_ELIvsSFI, n=15, truncate=34)
+```
+
+Las tablas que contenían las 100 *pathways* de KEGG más sobrerepresentadas por los genes diferencialmente expresados fueron guardadas y subidas al repositorio de *github*.
+
+```{r}
+KEGGTable_ELIvsNIT<-topKEGG(keg_ELIvsNIT, n=100, truncate=34)
+KEGGTable_ELIvsSFI<-topKEGG(keg_ELIvsSFI, n=100, truncate = 34)
+write.csv(KEGGTable_ELIvsNIT,file="KEGGTabla_ELIvsNIT.csv",row.names=FALSE)
+write.csv(KEGGTable_ELIvsSFI,file="KEGGTabla_ELIvsSFI.csv",row.names=FALSE)
+```
+
+

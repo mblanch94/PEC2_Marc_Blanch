@@ -1,0 +1,255 @@
+
+## 1. Definición de los datos para el análisis. 
+
+```{r}
+pre_targets <- read.table("~/Desktop/PEC2_OMICS/archivos targets y counts/targets.csv", header = TRUE, sep = ",") 
+pre_counts <- read.table("~/Desktop/PEC2_OMICS/archivos targets y counts/counts.csv", header = TRUE, sep = ";", row.names = 1) 
+```
+
+
+```{r}
+library(dplyr)
+set.seed(111)
+targets <- pre_targets %>% group_by(Group) %>% sample_n(10)
+```
+
+```{r}
+names(pre_counts) <- gsub(x=names(pre_counts), pattern = "\\.", replacement = "-")
+counts <- pre_counts %>%select(one_of(as.character(targets$Sample_Name)))
+row.names(counts) <- gsub(x=row.names(counts), pattern = "\\..*", replacement = "")
+```
+
+```{r}
+table(colnames(counts)==targets$Sample_Name)
+```
+
+```{r}
+library(limma)
+library(edgeR)
+```
+
+## 2. Filtraje de los datos y control de calidad.
+
+### 2.1. Filtraje de los datos.
+
+```{r}
+misCPM <- cpm(counts)
+filtraje <- misCPM > 0.25
+dim(filtraje)
+guardar <- rowSums(filtraje) >= 2
+counts.guardados <- counts[guardar,]
+summary(guardar)
+dim(counts.guardados)
+```
+
+```{r}
+y <- DGEList(counts.guardados)
+```
+
+### 2.2. Control de calidad de los datos.
+
+#### 2.2.1 *Boxplot.* 
+
+```{r}
+logcounts <- cpm(y,log=TRUE)
+boxplot(logcounts, xlab="1: ELI, 2:NIT, 3:SFI", ylab="Log2 CPM",las=2, names = c(targets$Group[1:30]))
+abline(h=median(logcounts),col="blue")
+```
+
+
+#### 2.2.2 *Multidimensional scaling (MDS).* 
+
+```{r}
+col.cell <- c("purple","orange","green")[targets$Group]
+plotMDS(y,col=col.cell, pch=16)
+legend("topleft",fill=c("purple","orange","green"),legend=levels(targets$Group),cex=0.6)
+```
+
+
+## 3. Patrón de expresión entre las muestras. 
+
+```{r}
+library(RColorBrewer)
+library(gplots)
+
+var_genes <- apply(logcounts, 1, var)
+seleccionar_var <- names(sort(var_genes, decreasing=TRUE))[1:500]
+lcpm_más_variables <- logcounts[seleccionar_var,]
+
+mi_palette <- brewer.pal(11,"RdYlBu")
+más_cols <- colorRampPalette(mi_palette)
+col.cell <- c("purple","orange", "green")[targets$Group]
+heatmap.2(lcpm_más_variables,col=rev(más_cols(50)),trace="none", labCol = targets$Group,ColSideColors=col.cell,scale="row")
+```
+
+
+```{r}
+pdf(file="Heatmap.pdf")
+heatmap.2(lcpm_más_variables,col=rev(más_cols(50)),trace="none", labCol = targets$Group,ColSideColors=col.cell,scale="row")
+dev.off()
+```
+
+## 4. Normalizació y transformación de los datos.
+
+### 4.1. Normalización. 
+
+```{r}
+y <- calcNormFactors(y)
+head(y$samples)
+```
+
+
+### 4.2. Matriz de diseño 
+
+```{r}
+mat_diseño <- model.matrix(~ 0 + Group, data = targets)
+mat_diseño
+```
+
+### 4.3. Transformación Voom. 
+
+```{r}
+v <- voom(y,mat_diseño,plot = TRUE)
+names(v)
+```
+
+
+### 4.4. *Boxplot* de los datos normalizados y transformados.  
+
+```{r}
+boxplot(v$E, xlab="1: ELI, 2:NIT, 3:SFI", ylab="Log2 CPM", las=2, names = c(targets$Group[1:30]))
+abline(h=median(v$E),col="blue")
+```
+
+
+## 5. Identificación de genes diferencialmente expresados. 
+
+```{r}
+fit <- lmFit(v)
+```
+
+### 5.1 Matriz de contrastes y comparaciones. 
+
+```{r}
+mat_contrastes <- makeContrasts(ELIvsNIT= GroupELI - GroupNIT, SFIvsNIT= GroupSFI - GroupNIT, ELIvsSFI= GroupELI - GroupSFI,  levels=mat_diseño)
+mat_contrastes
+```
+
+```{r}
+fit.cont <- contrasts.fit(fit, mat_contrastes)
+fit.cont <- eBayes(fit.cont)
+```
+
+```{r}
+resumen.fit <- decideTests(fit.cont)
+summary(resumen.fit)
+```
+
+```{r}
+topTable(fit.cont,coef="ELIvsNIT",sort.by="p")
+topTable(fit.cont,coef="SFIvsNIT",sort.by="p")
+topTable(fit.cont,coef="ELIvsSFI",sort.by="p")
+```
+
+### 5.2 Diagrama de Venn. 
+
+```{r}
+vennDiagram(resumen.fit, circle.col = c("red", "blue", "green"))
+```
+
+
+## 6. Anotación de los resultados.
+
+```{r}
+library(org.Hs.eg.db)
+```
+
+```{r}
+anotación <- select(org.Hs.eg.db,keytype="ENSEMBL",keys=rownames(fit.cont),columns=c("ENTREZID","SYMBOL","GENENAME"))
+```
+
+```{r}
+anotación2<-distinct(anotación, anotación$ENSEMBL, .keep_all = TRUE)
+anotación2$`anotación$ENSEMBL`=NULL
+table(anotación2$ENSEMBL==rownames(fit.cont))
+anotación<-anotación2
+fit.cont$genes <- anotación
+```
+
+```{r}
+topTable(fit.cont,coef="ELIvsNIT",sort.by="p", n=10)
+topTable(fit.cont,coef="SFIvsNIT",sort.by="p",n=10)
+topTable(fit.cont,coef="ELIvsSFI",sort.by="p",n=10)
+```
+
+```{r}
+Table_ELIvsNIT<-topTable(fit.cont,coef="ELIvsNIT",sort.by="p", n="Inf")
+Table_SFIvsNIT<-topTable(fit.cont,coef="SFIvsNIT",sort.by="p",n="Inf")
+Table_ELIvsSFI<-topTable(fit.cont,coef="ELIvsSFI",sort.by="p",n="Inf")
+```
+
+```{r}
+write.csv(Table_ELIvsNIT,file="TablaAnotaciones_ELIvsNIT.csv",row.names=FALSE)
+write.csv(Table_SFIvsNIT,file="TablaAnotaciones_SFIvsNIT.csv",row.names=FALSE)
+write.csv(Table_ELIvsSFI,file="TablaAnotaciones_ELIvsSFI.csv",row.names=FALSE)
+```
+
+
+## 7. Visualización de genes diferencialmente expresados. 
+
+### 7.1. Gráficos MD. 
+
+```{r}
+plotMD(fit.cont,coef=1,status=resumen.fit[,"ELIvsNIT"], values=c(-1,1))
+plotMD(fit.cont,coef=2,status=resumen.fit[,"SFIvsNIT"], values=c(-1,1))
+plotMD(fit.cont,coef=3,status=resumen.fit[,"ELIvsSFI"], values=c(-1,1))
+```
+
+### 7.2. Gráficos *volcano*.  
+
+```{r}
+volcanoplot(fit.cont,coef=1,highlight=5,names=fit.cont$genes$SYMBOL)
+abline(v=c(-1,1))
+volcanoplot(fit.cont,coef=2,highlight=5,names=fit.cont$genes$SYMBOL)
+abline(v=c(-1,1))
+volcanoplot(fit.cont,coef=3,highlight=5,names=fit.cont$genes$SYMBOL)
+abline(v=c(-1,1))
+```
+
+
+## 8. Análisis de significación biológica.
+
+```{r}
+go_ELIvsNIT<-goana(fit.cont, coef = "ELIvsNIT", geneid = Table_ELIvsNIT$ENTREZID, FDR = 0.05, trend = FALSE)
+topGO(go_ELIvsNIT, n=10)
+
+go_ELIvsSFI<-goana(fit.cont, coef = "ELIvsSFI", geneid = Table_ELIvsSFI$ENTREZID, FDR = 0.05, trend = FALSE)
+topGO(go_ELIvsSFI, n=10)
+```
+
+```{r}
+GOTable_ELIvsNIT<-topGO(go_ELIvsNIT, n=100)
+GOTable_ELIvsSFI<-topGO(go_ELIvsSFI, n=100)
+write.csv(GOTable_ELIvsNIT,file="GOTabla_ELIvsNIT.csv",row.names=FALSE)
+write.csv(GOTable_ELIvsNIT,file="GOTabla_ELIvsSFI.csv",row.names=FALSE)
+```
+
+### 8.2. *KEGG pathway analysis*.
+
+```{r}
+keg_ELIvsNIT<-kegga(fit.cont, coef = "ELIvsNIT", geneid = Table_ELIvsNIT$ENTREZID, FDR = 0.05, trend = FALSE)
+topKEGG(keg_ELIvsNIT, n=15, truncate=34)
+
+keg_ELIvsSFI<-kegga(fit.cont, coef = "ELIvsSFI", geneid = Table_ELIvsSFI$ENTREZID, FDR = 0.05, trend = FALSE)
+topKEGG(keg_ELIvsSFI, n=15, truncate=34)
+```
+
+```{r}
+KEGGTable_ELIvsNIT<-topKEGG(keg_ELIvsNIT, n=100, truncate=34)
+KEGGTable_ELIvsSFI<-topKEGG(keg_ELIvsSFI, n=100, truncate = 34)
+write.csv(KEGGTable_ELIvsNIT,file="KEGGTabla_ELIvsNIT.csv",row.names=FALSE)
+write.csv(KEGGTable_ELIvsSFI,file="KEGGTabla_ELIvsSFI.csv",row.names=FALSE)
+```
+
+
+

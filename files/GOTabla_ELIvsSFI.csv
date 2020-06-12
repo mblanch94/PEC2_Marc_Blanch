@@ -1,0 +1,101 @@
+"Term","Ont","N","Up","Down","P.Up","P.Down"
+"sperm capacitation","BP",20,9,0,7.9729569422497e-05,1
+"response to nutrient levels","BP",457,57,41,0.0828004670800988,0.000155457826120298
+"response to extracellular stimulus","BP",489,60,42,0.0972661861299009,0.000329589842084382
+"polyamine catabolic process","BP",4,0,3,1,0.000456585365593803
+"negative regulation of cellular process","BP",4313,507,214,0.000482858699696048,0.45166640315243
+"hindlimb morphogenesis","BP",30,1,7,0.962834730307695,0.000511100817459866
+"mammary gland branching involved in thelarche","BP",5,4,0,0.000531978992002695,1
+"thelarche","BP",5,4,0,0.000531978992002695,1
+"ubiquitin-dependent protein catabolic process","BP",577,85,33,0.000571198975926801,0.206771175049063
+"somite development","BP",82,19,4,0.000606475108289282,0.578226494581344
+"positive regulation of transferase activity","BP",615,64,49,0.513326749609694,0.000617704641028959
+"ubiquitin-protein transferase activity","MF",366,58,17,0.000719507190212787,0.630845063595145
+"protein polyubiquitination","BP",297,49,18,0.000736186245902486,0.211981296643035
+"cellular response to nutrient levels","BP",225,27,23,0.240825236290752,0.000742891283238436
+"modification-dependent protein catabolic process","BP",583,85,34,0.000788591238040635,0.172361464284917
+"molecular transducer activity","MF",971,103,70,0.424185711743403,0.00082767373481132
+"ribonucleoprotein granule","CC",213,18,22,0.852730837063617,0.000835379197877728
+"embryonic eye morphogenesis","BP",33,6,7,0.121392890418847,0.000943096112914688
+"oxidized DNA binding","MF",10,0,4,1,0.000960728172054508
+"spermine metabolic process","BP",5,0,3,1,0.00109960645053023
+"ESCRT II complex","CC",3,3,0,0.00111865446763996,1
+"membrane depolarization during bundle of His cell action potential","BP",3,3,0,0.00111865446763996,1
+"positive regulation of prostaglandin-endoperoxide synthase activity","BP",3,3,0,0.00111865446763996,1
+"regulation of prostaglandin-endoperoxide synthase activity","BP",3,3,0,0.00111865446763996,1
+"negative regulation of biological process","BP",4859,561,249,0.00121280567462426,0.228705114229817
+"signaling receptor activity","MF",919,100,66,0.322646845516603,0.00127357419970441
+"negative regulation of ERK1 and ERK2 cascade","BP",66,8,10,0.37818188807097,0.00135653683141866
+"modification-dependent macromolecule catabolic process","BP",594,85,34,0.00138690347347289,0.201280810719957
+"positive regulation of kidney development","BP",33,10,2,0.00140036032298715,0.487533024158959
+"protein modification by small protein conjugation","BP",853,116,47,0.00140094248037558,0.226861025587654
+"response to starvation","BP",180,23,19,0.17373418022187,0.0014222262534186
+"ectodermal placode formation","BP",11,2,4,0.319079189214076,0.00145117871948851
+"ectodermal placode morphogenesis","BP",11,2,4,0.319079189214076,0.00145117871948851
+"positive regulation of ubiquitin protein ligase activity","BP",11,2,4,0.319079189214076,0.00145117871948851
+"mesenchymal to epithelial transition","BP",18,7,1,0.00145815281768523,0.596662731852115
+"chemorepulsion of axon","BP",6,4,1,0.00146407836175211,0.261075804434015
+"development of secondary female sexual characteristics","BP",6,4,0,0.00146407836175211,1
+"olfactory bulb interneuron development","BP",6,4,1,0.00146407836175211,0.261075804434015
+"cardiac ventricle development","BP",122,24,6,0.00154795349846755,0.558686426205432
+"regulation of multicellular organismal development","BP",1860,231,101,0.0016958565056912,0.153299457838774
+"regulation of transferase activity","BP",913,99,65,0.33714113723451,0.00171165612411566
+"appendage development","BP",157,17,17,0.466015853001046,0.00188393563264368
+"limb development","BP",157,17,17,0.466015853001046,0.00188393563264368
+"cellular response to extracellular stimulus","BP",256,31,24,0.207035869733209,0.00190795766974977
+"negative regulation of toll-like receptor signaling pathway","BP",37,5,7,0.338480053118865,0.00191565934692592
+"protein phosphatase type 1 complex","CC",10,5,0,0.00193448851623694,1
+"appendage morphogenesis","BP",131,14,15,0.496986471965207,0.00196750283128769
+"limb morphogenesis","BP",131,14,15,0.496986471965207,0.00196750283128769
+"protein-containing complex","CC",4894,507,279,0.537295610598165,0.00197820360367344
+"postsynapse assembly","BP",29,9,0,0.00200390958831221,1
+"central nervous system development","BP",885,101,63,0.165857311143757,0.00200962740544508
+"protein destabilization","BP",46,12,1,0.00205064541984265,0.901942817601067
+"cellular response to glucocorticoid stimulus","BP",52,13,1,0.0020606970451068,0.927599251619205
+"ectodermal placode development","BP",12,2,4,0.35872353244196,0.00209251594249804
+"tRNA 5'-leader removal","BP",12,1,4,0.731867532152467,0.00209251594249804
+"C-terminal protein lipidation","BP",6,0,3,1,0.0021187727194083
+"negative regulation of double-strand break repair via nonhomologous end joining","BP",6,0,3,1,0.0021187727194083
+"negative regulation of fatty acid metabolic process","BP",24,8,0,0.00213256816955035,1
+"ubiquitin-like protein transferase activity","MF",391,59,17,0.0021420226268643,0.733701455542368
+"brain development","BP",653,73,49,0.267165029324893,0.00218939138152427
+"lipid localization","BP",349,38,30,0.403825805444474,0.00219513588516292
+"cytoplasmic ribonucleoprotein granule","CC",202,17,20,0.851456739709165,0.00233539450427225
+"bis(5'-adenosyl)-triphosphatase activity","MF",2,0,2,1,0.00241512905013018
+"negative regulation of bone trabecula formation","BP",2,0,2,1,0.00241512905013018
+"optic placode formation","BP",2,0,2,1,0.00241512905013018
+"optic placode formation involved in camera-type eye formation","BP",2,0,2,1,0.00241512905013018
+"platelet-derived growth factor production","BP",2,0,2,1,0.00241512905013018
+"polyamine oxidase activity","MF",2,0,2,1,0.00241512905013018
+"regulation of bone trabecula formation","BP",2,0,2,1,0.00241512905013018
+"regulation of platelet-derived growth factor production","BP",2,0,2,1,0.00241512905013018
+"regulation of transcription involved in lymphatic endothelial cell fate commitment","BP",2,0,2,1,0.00241512905013018
+"Scc2-Scc4 cohesin loading complex","CC",2,0,2,1,0.00241512905013018
+"SMC loading complex","CC",2,0,2,1,0.00241512905013018
+"spermine catabolic process","BP",2,0,2,1,0.00241512905013018
+"spermine:oxygen oxidoreductase (spermidine-forming) activity","MF",2,0,2,1,0.00241512905013018
+"negative regulation of striated muscle tissue development","BP",47,12,3,0.0024978000327183,0.40901181046652
+"embryonic organ development","BP",386,58,21,0.00255755503864717,0.347774627359883
+"positive regulation of nuclear division","BP",60,14,2,0.00283765925206528,0.801296702057185
+"regulation of nervous system development","BP",837,112,44,0.00287693639172791,0.343617396482607
+"axolemma","CC",13,0,4,1,0.00290574426966285
+"negative regulation of muscle organ development","BP",48,12,3,0.0030211805503473,0.422321272611519
+"unsaturated fatty acid biosynthetic process","BP",48,12,2,0.0030211805503473,0.690789476193231
+"cardiac endothelial cell differentiation","BP",7,4,0,0.00313500807983003,1
+"double-strand break repair via synthesis-dependent strand annealing","BP",7,4,0,0.00313500807983003,1
+"endocardial cell differentiation","BP",7,4,0,0.00313500807983003,1
+"positive regulation of cerebellar granule cell precursor proliferation","BP",7,4,1,0.00313500807983003,0.297420271387615
+"positive regulation of immune response","BP",732,73,53,0.663941776101698,0.00313764444228783
+"negative regulation of small molecule metabolic process","BP",94,19,4,0.00332384427312069,0.685141412707835
+"protein ubiquitination","BP",773,104,43,0.00337677982188126,0.219679635925317
+"cellular response to corticosteroid stimulus","BP",55,13,1,0.00350982134722188,0.937790260080991
+"cell surface","CC",753,76,54,0.624188874536473,0.00351509893198456
+"calcium ion binding","MF",639,88,34,0.00353747359338148,0.341116032449504
+"protein phosphatase 2A binding","MF",31,3,6,0.638246713783236,0.00355752168053714
+"Bergmann glial cell differentiation","BP",7,0,3,1,0.0035725777496176
+"negative regulation of leukocyte proliferation","BP",75,7,10,0.673354928837815,0.0035849822610915
+"regulation of polysaccharide biosynthetic process","BP",37,10,2,0.00358672359224836,0.549203765634852
+"receptor regulator activity","MF",400,59,20,0.00359441319632265,0.502160592129839
+"regulation of ERK1 and ERK2 cascade","BP",254,34,23,0.0738073881825447,0.00362695450937026
+"positive regulation of mitotic nuclear division","BP",49,12,2,0.00362990231102846,0.701651708638095
+"ubiquitin ligase complex","CC",274,43,15,0.00392450711171372,0.371939623761858
